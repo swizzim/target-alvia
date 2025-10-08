@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import { assignTargets } from '@/lib/game-logic'
 import type { Lobby, Player, GameState } from '@/lib/supabase'
 
@@ -24,6 +24,7 @@ export default function LobbyPage() {
     const fetchLobbyData = async () => {
       try {
         // Fetch lobby
+        const supabase = getSupabase()
         const { data: lobbyData, error: lobbyError } = await supabase
           .from('lobbies')
           .select('*')
@@ -69,7 +70,8 @@ export default function LobbyPage() {
     fetchLobbyData()
 
     // Set up real-time subscriptions
-    const lobbySubscription = supabase
+    const supabaseRt = getSupabase()
+    const lobbySubscription = supabaseRt
       .channel(`lobby-${code}`)
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'lobbies', filter: `code=eq.${code}` },
@@ -101,6 +103,7 @@ export default function LobbyPage() {
       // Update players with targets
       for (const player of playersWithTargets) {
         if (player.target_id) {
+          const supabase = getSupabase()
           await supabase
             .from('players')
             .update({ target_id: player.target_id })
@@ -109,6 +112,7 @@ export default function LobbyPage() {
       }
 
       // Update lobby and game state
+      const supabase = getSupabase()
       await supabase
         .from('lobbies')
         .update({ status: 'active' })

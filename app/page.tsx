@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import { generateLobbyCode } from '@/lib/game-logic'
 
 export default function Home() {
@@ -27,6 +27,7 @@ export default function Home() {
       const hostId = crypto.randomUUID()
 
       // Create lobby
+      const supabase = getSupabase()
       const { data: lobby, error: lobbyError } = await supabase
         .from('lobbies')
         .insert({
@@ -88,6 +89,7 @@ export default function Home() {
 
     try {
       // Check if lobby exists
+      const supabase = getSupabase()
       const { data: lobby, error: lobbyError } = await supabase
         .from('lobbies')
         .select('*')
