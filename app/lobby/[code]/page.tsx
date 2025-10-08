@@ -54,11 +54,18 @@ export default function LobbyPage() {
         if (gameError) throw gameError
         setGameState(gameData)
 
-        // Set current player (you can implement user identification here)
-        // For now, we'll use the first player as current
-        if (playersData.length > 0) {
-          setCurrentPlayer(playersData[0])
-        }
+        // Identify current player from localStorage set at join/create time
+        let storedId: string | null = null
+        try { storedId = localStorage.getItem('playerId') } catch {}
+
+        const me = storedId
+          ? playersData.find(p => p.id === storedId)
+          : undefined
+
+        // Fallback: use any non-host alive player; if none, use host
+        const fallback = playersData.find(p => p.is_alive && !p.is_host) || playersData[0]
+        const activePlayer = me || fallback || null
+        if (activePlayer) setCurrentPlayer(activePlayer)
       } catch (err) {
         console.error('Error fetching lobby data:', err)
         setError('Failed to load lobby data')
