@@ -100,6 +100,13 @@ export default function LobbyPage() {
     }
   }, [code, lobby?.id])
 
+  // Auto-enter game when lobby becomes active
+  useEffect(() => {
+    if (lobby?.status === 'active' && code) {
+      router.push(`/game/${code}`)
+    }
+  }, [lobby?.status, code, router])
+
   const startGame = async () => {
     if (!lobby || !currentPlayer || !currentPlayer.is_host) return
 
@@ -260,13 +267,7 @@ export default function LobbyPage() {
 
           {lobby.status === 'active' && (
             <div className="text-center">
-              <p className="text-gray-600 mb-4">Game is in progress!</p>
-              <button
-                onClick={() => router.push(`/game/${code}`)}
-                className="bg-primary-500 text-white px-6 py-3 rounded-lg hover:bg-primary-600 transition-colors font-medium"
-              >
-                Enter Game
-              </button>
+              <p className="text-gray-600 mb-4">Game is starting...</p>
             </div>
           )}
 
