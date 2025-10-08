@@ -202,6 +202,14 @@ export default function GamePage() {
           {/* Players status list removed */}
 
           {/* No back to lobby while game is active */}
+          <div className="mt-6 pt-4 border-t border-gray-200 text-center">
+            <button
+              onClick={() => router.push('/')}
+              className="text-gray-500 hover:text-gray-700 text-sm"
+            >
+              ← Back to Home
+            </button>
+          </div>
         </div>
       </div>
     </div>
