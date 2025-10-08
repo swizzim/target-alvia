@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { getSupabase } from '@/lib/supabase'
-import { eliminateTarget } from '@/lib/game-logic'
 import type { Lobby, Player, GameState } from '@/lib/supabase'
 
 export default function GamePage() {
@@ -16,8 +15,6 @@ export default function GamePage() {
   const [gameState, setGameState] = useState<GameState | null>(null)
   const [currentPlayer, setCurrentPlayer] = useState<Player | null>(null)
   const [selectedPlayer, setSelectedPlayer] = useState<string>('')
-  const [item, setItem] = useState('')
-  const [location, setLocation] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [isEliminating, setIsEliminating] = useState(false)
@@ -112,79 +109,7 @@ export default function GamePage() {
     }
   }, [code, lobby?.id])
 
-  const handleElimination = async () => {
-    if (!currentPlayer || !selectedPlayer || !item.trim() || !location.trim()) {
-      setError('Please fill in all fields')
-      return
-    }
-
-    const eliminator = players.find(p => p.id === selectedPlayer)
-    if (!eliminator || !eliminator.is_alive) {
-      setError('Invalid player selected')
-      return
-    }
-
-    if (!eliminator.target_id) {
-      setError('No target assigned to this player')
-      return
-    }
-
-    const target = players.find(p => p.id === eliminator.target_id)
-    if (!target || !target.is_alive) {
-      setError('Target is already eliminated')
-      return
-    }
-
-    setIsEliminating(true)
-    setError('')
-
-    try {
-      // Mark target as eliminated
-      const supabase = getSupabase()
-      await supabase
-        .from('players')
-        .update({ is_alive: false })
-        .eq('id', target.id)
-
-      // Update eliminator's target
-      await supabase
-        .from('players')
-        .update({ target_id: target.target_id })
-        .eq('id', eliminator.id)
-
-      // Check if game is over
-      const alivePlayers = players.filter(p => p.id !== target.id && p.is_alive)
-      if (alivePlayers.length === 1) {
-        // Game over - update lobby and game state
-        await supabase
-          .from('lobbies')
-          .update({ status: 'finished' })
-          .eq('id', lobby!.id)
-
-        await supabase
-          .from('game_states')
-          .update({ 
-            current_phase: 'finished',
-            winner_id: alivePlayers[0].id
-          })
-          .eq('lobby_id', lobby!.id)
-
-        // Show winner alert
-        setTimeout(() => {
-          alert(`🎉 ${alivePlayers[0].name} is the winner of Target: Alvia! 🎉`)
-        }, 100)
-      }
-
-      // Clear form
-      setItem('')
-      setLocation('')
-    } catch (err) {
-      console.error('Error processing elimination:', err)
-      setError('Failed to process elimination')
-    } finally {
-      setIsEliminating(false)
-    }
-  }
+  // Elimination and items removed per simplified spec
 
   if (loading) {
     return (
@@ -229,7 +154,6 @@ export default function GamePage() {
     )
   }
 
-  const alivePlayers = players.filter(p => p.is_alive)
   const selectedPlayerData = players.find(p => p.id === selectedPlayer)
   const targetPlayer = selectedPlayerData?.target_id 
     ? players.find(p => p.id === selectedPlayerData.target_id)
@@ -243,11 +167,7 @@ export default function GamePage() {
             <h1 className="text-2xl font-bold text-primary-700 mb-2">
               🎯 Game: {code}
             </h1>
-            <div className="bg-success-50 border border-success-200 rounded-lg p-3">
-              <p className="text-success-700 font-semibold text-gray-800">
-                Players remaining: {alivePlayers.length}
-              </p>
-            </div>
+            {/* Removed players remaining count */}
           </div>
 
           {error && (
@@ -268,92 +188,18 @@ export default function GamePage() {
             </div>
           )}
 
-          {/* Target Display */}
+          {/* Target Display (read-only) */}
           {selectedPlayerData && targetPlayer && (
             <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
               <p className="text-center font-semibold text-yellow-800">
-                Your current target: {targetPlayer.name}
+                Your target: {targetPlayer.name}
               </p>
             </div>
           )}
 
-          {/* Elimination Form */}
-          {selectedPlayerData && targetPlayer && (
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Item:
-                </label>
-                <input
-                  type="text"
-                  value={item}
-                  onChange={(e) => setItem(e.target.value)}
-                  placeholder="Enter item for your target"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
-                />
-              </div>
+          {/* Elimination UI removed */}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location:
-                </label>
-                <input
-                  type="text"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Enter location for your target"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-gray-900 placeholder-gray-500"
-                />
-              </div>
-
-              <button
-                onClick={handleElimination}
-                disabled={isEliminating || !item.trim() || !location.trim()}
-                className="w-full bg-danger-500 text-white py-3 px-4 rounded-lg hover:bg-danger-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-              >
-                {isEliminating ? 'Processing...' : 'I eliminated my target'}
-              </button>
-            </div>
-          )}
-
-          {/* Players Status */}
-          <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-800 mb-3">
-              Players Status
-            </h2>
-            <div className="space-y-2">
-              {players.map((player) => {
-                const isTarget = selectedPlayerData?.target_id === player.id
-                return (
-                  <div
-                    key={player.id}
-                    className={`flex items-center justify-between p-3 rounded-lg border ${
-                      player.is_alive
-                        ? isTarget
-                          ? 'bg-red-50 border-red-200'
-                          : 'bg-gray-50 border-gray-200'
-                        : 'bg-gray-100 border-gray-300 opacity-60'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <span className="text-lg">
-                        {player.is_alive ? (isTarget ? '🎯' : '🟢') : '💀'}
-                      </span>
-                      <span className="font-medium text-gray-800">{player.name}</span>
-                      {isTarget && selectedPlayerData && (
-                        <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded">
-                          Your Target
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {player.is_alive ? 'Alive' : 'Eliminated'}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
+          {/* Players status list removed */}
 
           {/* No back to lobby while game is active */}
         </div>
