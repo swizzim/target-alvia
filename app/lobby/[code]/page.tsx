@@ -196,7 +196,7 @@ export default function LobbyPage() {
                 <div
                   key={player.id}
                   className={`flex items-center justify-between p-3 rounded-lg border ${
-                    player.is_host
+                    player.id === currentPlayer?.id
                       ? 'bg-primary-50 border-primary-200'
                       : 'bg-gray-50 border-gray-200'
                   }`}
@@ -206,6 +206,11 @@ export default function LobbyPage() {
                       {player.is_host ? '👑' : '🎯'}
                     </span>
                     <span className="font-medium text-gray-800">{player.name}</span>
+                    {player.id === currentPlayer?.id && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                        You
+                      </span>
+                    )}
                     {player.is_host && (
                       <span className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded">
                         Host
